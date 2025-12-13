@@ -10,8 +10,8 @@ class GroqService:
 
     def generate_outline(self, subject: str, grade: str, unit: str) -> str:
         """
-        階段一：生成教學大綱
-        使用 Chain of Thought 確保結構化輸出
+        階段一：生成教學大綱（JSON格式）
+        返回結構化的章節資訊，用於後續分章節生成內容
         """
         prompt = f"""
 你是一位專業的教育內容規劃師。請為以下教學需求生成一個結構化的教學大綱。
@@ -20,32 +20,46 @@ class GroqService:
 年級：{grade}
 單元：{unit}
 
-請使用清晰的文字格式輸出大綱，格式範例：
+請以標準的 JSON 格式輸出大綱，只輸出JSON，不要包含任何其他文字或markdown標記。
 
-# 單元標題
-
-## 學習目標
-1. 學習目標1
-2. 學習目標2
-3. 學習目標3
-
-## 教學大綱
-
-### 一、章節標題
-- 主題1
-- 主題2
-- 主題3
-
-### 二、章節標題
-- 主題1
-- 主題2
+格式如下（請嚴格遵守此格式）：
+{{
+  "title": "單元標題",
+  "objectives": [
+    "學習目標1",
+    "學習目標2",
+    "學習目標3"
+  ],
+  "chapters": [
+    {{
+      "chapter_number": 1,
+      "title": "章節標題",
+      "topics": [
+        "主題1",
+        "主題2",
+        "主題3"
+      ],
+      "description": "本章節的簡短描述"
+    }},
+    {{
+      "chapter_number": 2,
+      "title": "章節標題",
+      "topics": [
+        "主題1",
+        "主題2"
+      ],
+      "description": "本章節的簡短描述"
+    }}
+  ]
+}}
 
 要求：
 1. 大綱應該循序漸進，從基礎到進階
 2. 考慮該年級學生的認知能力
 3. 確保邏輯連貫性
 4. 包含 3-5 個主要章節
-5. 使用清晰的標題和條列式呈現
+5. 每個章節包含 2-4 個主題
+6. 只輸出有效的 JSON，不要有額外的文字說明
 """
         
         chat_completion = self.client.chat.completions.create(
@@ -62,9 +76,108 @@ class GroqService:
         
         return chat_completion.choices[0].message.content
 
-    def generate_content(self, subject: str, grade: str, unit: str, outline: str) -> str:
+    def generate_chapter_content(self, subject: str, grade: str, unit: str, 
+                                chapter_number: int, chapter_title: str, 
+                                topics: list, full_outline: str) -> str:
         """
-        階段二：根據大綱生成詳細教材
+        為單個章節生成詳細內容
+        """
+        topics_text = "\n".join([f"- {topic}" for topic in topics])
+        
+        prompt = f"""
+你是一位經驗豐富的{subject}老師。請為{grade}學生編寫以下章節的詳細教材內容。
+
+單元：{unit}
+章節：第{chapter_number}章 - {chapter_title}
+
+本章節主題：
+{topics_text}
+
+完整大綱參考：
+{full_outline}
+
+要求：
+1. 使用淺顯易懂的語言，適合{grade}學生的理解程度
+2. 提供生活化的例子和情境
+3. 對於數學/理化科目，請清楚說明公式和計算步驟
+4. 適當使用圖表說明（用文字描述圖表內容）
+5. 每個概念後面提供簡單的範例
+6. 使用 Markdown 格式輸出，包含適當的標題層級（##, ###）
+7. 本章節內容應該完整且詳細，約500-800字
+
+請生成完整的章節內容：
+"""
+        
+        chat_completion = self.client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model=self.model,
+            temperature=0.7,
+            max_tokens=2048,
+        )
+        
+        return chat_completion.choices[0].message.content
+
+    def generate_content(self, subject: str, grade: str, unit: str, outline: str, progress_callback=None) -> str:
+        """
+        階段二：根據大綱逐章節生成詳細教材
+        解析 JSON 大綱，針對每個章節調用 AI 生成內容
+        """
+        try:
+            # 解析 JSON 大綱
+            import json
+            outline_data = json.loads(outline)
+            
+            # 生成完整教材
+            full_content = f"# {outline_data['title']}\n\n"
+            
+            # 添加學習目標
+            full_content += "## 學習目標\n\n"
+            for i, obj in enumerate(outline_data['objectives'], 1):
+                full_content += f"{i}. {obj}\n"
+            full_content += "\n---\n\n"
+            
+            # 逐章節生成內容
+            chapters = outline_data['chapters']
+            total_chapters = len(chapters)
+            
+            for index, chapter in enumerate(chapters, 1):
+                chapter_num = chapter['chapter_number']
+                chapter_title = chapter['title']
+                topics = chapter['topics']
+                
+                print(f"正在生成第 {chapter_num} 章：{chapter_title}... ({index}/{total_chapters})")
+                
+                # 更新進度
+                if progress_callback:
+                    progress_callback(index, total_chapters)
+                
+                # 調用 AI 生成本章節內容
+                chapter_content = self.generate_chapter_content(
+                    subject, grade, unit,
+                    chapter_num, chapter_title, topics,
+                    outline
+                )
+                
+                # 組合章節內容
+                full_content += f"## 第{chapter_num}章：{chapter_title}\n\n"
+                full_content += chapter_content + "\n\n"
+                full_content += "---\n\n"
+            
+            return full_content
+            
+        except json.JSONDecodeError as e:
+            # 如果 JSON 解析失敗，回退到原來的方法
+            print(f"JSON 解析失敗: {e}，使用備用方法")
+            return self._generate_content_fallback(subject, grade, unit, outline)
+    
+    def _generate_content_fallback(self, subject: str, grade: str, unit: str, outline: str) -> str:
+        """
+        備用方法：如果 JSON 解析失敗，使用原來的一次性生成方法
         """
         prompt = f"""
 你是一位經驗豐富的{subject}老師。請根據以下大綱，為{grade}學生編寫詳細的教材內容。

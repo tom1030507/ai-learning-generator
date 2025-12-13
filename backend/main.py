@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
 import json
 
 from database import engine, get_db, Base
@@ -20,6 +20,9 @@ from config import settings
 
 # 建立資料庫表
 Base.metadata.create_all(bind=engine)
+
+# 用於儲存生成進度的全域字典
+generation_progress: Dict[int, Dict] = {}
 
 app = FastAPI(title="智慧教材生成平台 API")
 
@@ -79,7 +82,7 @@ def generate_content(
     db: Session = Depends(get_db)
 ):
     """
-    階段二：根據大綱生成詳細教材
+    階段二：根據大綱生成詳細教材（支持進度追蹤）
     """
     try:
         # 取得 generation 記錄
@@ -90,18 +93,42 @@ def generate_content(
         if not generation:
             raise HTTPException(status_code=404, detail="找不到該記錄")
         
-        # 生成教材內容
+        # 初始化進度
+        try:
+            outline_data = json.loads(request.outline)
+            total_chapters = len(outline_data.get('chapters', []))
+            generation_progress[request.generation_id] = {
+                "current": 0,
+                "total": total_chapters,
+                "status": "processing"
+            }
+        except:
+            total_chapters = 0
+        
+        # 生成教材內容（帶進度回調）
+        def progress_callback(current, total):
+            generation_progress[request.generation_id] = {
+                "current": current,
+                "total": total,
+                "status": "processing"
+            }
+        
         content = groq_service.generate_content(
             generation.subject,
             generation.grade,
             generation.unit,
-            request.outline
+            request.outline,
+            progress_callback=progress_callback
         )
         
         # 更新資料庫
         generation.content = content
         db.commit()
         db.refresh(generation)
+        
+        # 完成進度
+        if request.generation_id in generation_progress:
+            generation_progress[request.generation_id]["status"] = "completed"
         
         return ContentResponse(
             generation_id=generation.id,
@@ -110,7 +137,20 @@ def generate_content(
     except HTTPException:
         raise
     except Exception as e:
+        # 錯誤時更新進度
+        if request.generation_id in generation_progress:
+            generation_progress[request.generation_id]["status"] = "error"
         raise HTTPException(status_code=500, detail=f"生成教材失敗: {str(e)}")
+
+@app.get("/api/generation-progress/{generation_id}")
+def get_generation_progress(generation_id: int):
+    """
+    查詢教材生成進度
+    """
+    if generation_id not in generation_progress:
+        return {"current": 0, "total": 0, "status": "not_started"}
+    
+    return generation_progress[generation_id]
 
 @app.post("/api/generate-questions", response_model=QuestionsResponse)
 def generate_questions(

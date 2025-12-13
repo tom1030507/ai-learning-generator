@@ -49,6 +49,16 @@ export const generateQuestions = async (generationId, content) => {
   }
 };
 
+export const getGenerationProgress = async (generationId) => {
+  try {
+    const response = await api.get(`/api/generation-progress/${generationId}`);
+    return response.data;
+  } catch (error) {
+    console.error('取得生成進度失敗:', error);
+    throw error;
+  }
+};
+
 export const getHistory = async () => {
   try {
     const response = await api.get('/api/history');

@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GeneratorForm from './components/GeneratorForm';
 import OutlineDisplay from './components/OutlineDisplay';
 import ContentDisplay from './components/ContentDisplay';
 import QuestionsDisplay from './components/QuestionsDisplay';
 import History from './components/History';
 import LoadingSpinner from './components/LoadingSpinner';
-import { generateOutline, generateContent, generateQuestions } from './services/api';
+import ProgressIndicator from './components/ProgressIndicator';
+import { generateOutline, generateContent, generateQuestions, getGenerationProgress } from './services/api';
 
 function App() {
   const [currentView, setCurrentView] = useState('form'); // 'form', 'history', 'view'
@@ -16,6 +17,28 @@ function App() {
   const [outline, setOutline] = useState('');
   const [content, setContent] = useState('');
   const [questions, setQuestions] = useState('');
+  const [progress, setProgress] = useState(null);
+
+  // 輪詢進度
+  useEffect(() => {
+    let intervalId;
+    if (loading && generationId && currentStep === 2) {
+      intervalId = setInterval(async () => {
+        try {
+          const progressData = await getGenerationProgress(generationId);
+          setProgress(progressData);
+          if (progressData.status === 'completed' || progressData.status === 'error') {
+            clearInterval(intervalId);
+          }
+        } catch (error) {
+          console.error('取得進度失敗:', error);
+        }
+      }, 1000); // 每秒查詢一次
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [loading, generationId, currentStep]);
 
   const handleFormSubmit = async (data) => {
     setFormData(data);
@@ -37,6 +60,7 @@ function App() {
 
   const handleOutlineConfirm = async (editedOutline) => {
     setLoading(true);
+    setProgress(null);
 
     try {
       const response = await generateContent(generationId, editedOutline);
@@ -46,6 +70,7 @@ function App() {
       alert('生成教材失敗，請稍後再試');
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -236,7 +261,17 @@ function App() {
               {currentStep >= 2 && (
                 <>
                   {loading && currentStep === 2 ? (
-                    <LoadingSpinner message="正在生成教材內容..." />
+                    progress && progress.total > 0 ? (
+                      <div className="max-w-4xl mx-auto">
+                        <ProgressIndicator
+                          current={progress.current}
+                          total={progress.total}
+                          message="正在逐章生成教材內容"
+                        />
+                      </div>
+                    ) : (
+                      <LoadingSpinner message="正在生成教材內容..." />
+                    )
                   ) : content && (
                     <div className="max-w-4xl mx-auto">
                       <ContentDisplay
