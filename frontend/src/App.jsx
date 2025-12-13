@@ -60,8 +60,20 @@ function App() {
 
   const handleOutlineConfirm = async (editedOutline) => {
     setLoading(true);
-    setProgress(null);
     setCurrentStep(2);
+    
+    // 立即设置初始进度为0
+    try {
+      const outlineData = JSON.parse(editedOutline);
+      const totalChapters = outlineData.chapters?.length || 0;
+      setProgress({
+        current: 0,
+        total: totalChapters,
+        status: "processing"
+      });
+    } catch (e) {
+      setProgress(null);
+    }
 
     try {
       const response = await generateContent(generationId, editedOutline);

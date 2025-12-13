@@ -1,12 +1,30 @@
 from groq import Groq
 from config import settings
 import json
+import re
 
 class GroqService:
     def __init__(self):
         self.client = Groq(api_key=settings.GROQ_API_KEY)
         # 使用 Groq 支援的模型
         self.model = "openai/gpt-oss-120b"
+    
+    def _fix_latex_brackets(self, text: str) -> str:
+        """
+        自動修正 LaTeX 公式格式：將 [ ] 替換為 $ $
+        同時處理 \[ \] 格式
+        """
+        # 替換 [ ... ] 為 $ ... $
+        # 使用非貪婪匹配，只匹配數學公式（包含反斜線或特殊符號）
+        text = re.sub(r'\[\s*([^\[\]]*?(?:\\[a-zA-Z]+|\\frac|\\text|\\times|\\div)[^\[\]]*?)\s*\]', r'$\1$', text)
+        
+        # 替換 \[ ... \] 為 $$ ... $$
+        text = re.sub(r'\\\[\s*(.+?)\s*\\\]', r'$$\1$$', text, flags=re.DOTALL)
+        
+        # 替換 \( ... \) 為 $ ... $
+        text = re.sub(r'\\\(\s*(.+?)\s*\\\)', r'$\1$', text)
+        
+        return text
 
     def generate_outline(self, subject: str, grade: str, unit: str) -> str:
         """
@@ -102,10 +120,12 @@ class GroqService:
 1. 使用淺顯易懂的語言，適合{grade}學生的理解程度
 2. 提供生活化的例子和情境
 3. 對於數學/理化科目，請清楚說明公式和計算步驟
-4. **數學公式請使用標準 LaTeX 格式**：
-   - 行內公式用 $公式$，例如：$v = \\frac{{d}}{{t}}$
-   - 塊級公式用 $$公式$$，例如：$$E = mc^2$$
-   - **不要使用 [ ] 包裹公式**
+4. **【重要】數學公式格式規範**：
+   - ✅ 正確：行內公式用單個 $ 符號，例如 $v = \\frac{{d}}{{t}}$
+   - ✅ 正確：塊級公式用雙 $$ 符號，例如 $$E = mc^2$$
+   - ❌ 錯誤：絕對不要使用方括號 [ ] 包裹公式
+   - ❌ 錯誤：不要寫成 [ v = \\frac{{d}}{{t}} ]
+   - 範例：計算速率時寫 $v = \\frac{{30\\text{{ km}}}}{{2\\text{{ h}}}} = 15\\text{{ km/h}}$
 5. **表格請使用標準 Markdown 表格格式**，例如：
    | 項目 | 說明 |
    |------|------|
@@ -126,6 +146,9 @@ class GroqService:
         )
         
         chapter_content = content_completion.choices[0].message.content
+        
+        # 自動修正 LaTeX 公式格式
+        chapter_content = self._fix_latex_brackets(chapter_content)
         
         # 生成該章節的練習題
         questions_prompt = f"""
@@ -170,10 +193,11 @@ D) 選項D
 2. 題目難度應符合{grade}程度
 3. 涵蓋本章節的主要概念
 4. 對於數學題目，確保數值準確且合理
-5. **數學公式請使用標準 LaTeX 格式**：
-   - 行內公式用 $公式$，例如：$x^2 + 1 = 0$
-   - 塊級公式用 $$公式$$
-   - **不要使用 [ ] 包裹公式**
+5. **【重要】數學公式格式規範**：
+   - ✅ 正確：行內公式用 $公式$，例如 $x^2 + 1 = 0$
+   - ✅ 正確：塊級公式用 $$公式$$
+   - ❌ 錯誤：絕對不要使用方括號 [ ] 包裹公式
+   - 範例：題目中寫 $5\\text{{ m/s}} = ?\\text{{ km/h}}$
 6. **表格請使用標準 Markdown 表格格式**
 7. 提供詳細的解題步驟和說明
 8. 題型多樣化（選擇、填充、計算、問答等）
@@ -188,6 +212,9 @@ D) 選項D
         )
         
         chapter_questions = questions_completion.choices[0].message.content
+        
+        # 自動修正 LaTeX 公式格式
+        chapter_questions = self._fix_latex_brackets(chapter_questions)
         
         return {
             "content": chapter_content,
@@ -243,6 +270,8 @@ D) 選項D
                     "content": chapter_data["content"],
                     "questions": chapter_data["questions"]
                 })
+            
+            print(f"所有章節生成完成！")
             
             # 返回JSON字符串
             return json.dumps(result, ensure_ascii=False, indent=2)

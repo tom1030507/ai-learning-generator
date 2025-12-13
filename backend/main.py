@@ -93,7 +93,7 @@ def generate_content(
         if not generation:
             raise HTTPException(status_code=404, detail="找不到該記錄")
         
-        # 初始化進度
+        # 初始化進度（從0開始）
         try:
             outline_data = json.loads(request.outline)
             total_chapters = len(outline_data.get('chapters', []))
