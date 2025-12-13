@@ -1,5 +1,9 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 const ChapterDisplay = ({ chapter, chapterIndex, totalChapters, onNext, onPrev, onFinish }) => {
   return (
@@ -87,7 +91,12 @@ const ChapterDisplay = ({ chapter, chapterIndex, totalChapters, onNext, onPrev, 
           <h3 className="text-xl font-bold text-gray-800">教材內容</h3>
         </div>
         <div className="prose prose-slate max-w-none bg-gray-50 rounded-lg p-6">
-          <ReactMarkdown>{chapter.content}</ReactMarkdown>
+          <ReactMarkdown 
+            remarkPlugins={[remarkMath, remarkGfm]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {chapter.content}
+          </ReactMarkdown>
         </div>
       </div>
 
@@ -100,7 +109,12 @@ const ChapterDisplay = ({ chapter, chapterIndex, totalChapters, onNext, onPrev, 
           <h3 className="text-xl font-bold text-gray-800">本章練習題</h3>
         </div>
         <div className="prose prose-slate max-w-none bg-green-50 rounded-lg p-6 border border-green-200">
-          <ReactMarkdown>{chapter.questions}</ReactMarkdown>
+          <ReactMarkdown 
+            remarkPlugins={[remarkMath, remarkGfm]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {chapter.questions}
+          </ReactMarkdown>
         </div>
       </div>
 

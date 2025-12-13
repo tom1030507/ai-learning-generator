@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 const QuestionsDisplay = ({ questions }) => {
   return (
@@ -13,7 +17,12 @@ const QuestionsDisplay = ({ questions }) => {
 
       <div className="bg-gray-50 rounded-lg p-6 max-h-[600px] overflow-y-auto">
         <div className="prose prose-slate max-w-none">
-          <ReactMarkdown>{questions}</ReactMarkdown>
+          <ReactMarkdown 
+            remarkPlugins={[remarkMath, remarkGfm]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {questions}
+          </ReactMarkdown>
         </div>
       </div>
 
