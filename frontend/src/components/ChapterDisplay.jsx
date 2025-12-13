@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
+import InteractiveQuestions from './InteractiveQuestions';
 import 'katex/dist/katex.min.css';
 
 const ChapterDisplay = ({ chapter, chapterIndex, totalChapters, onNext, onPrev, onFinish }) => {
@@ -108,14 +109,7 @@ const ChapterDisplay = ({ chapter, chapterIndex, totalChapters, onNext, onPrev, 
           </span>
           <h3 className="text-xl font-bold text-gray-800">本章練習題</h3>
         </div>
-        <div className="prose prose-slate max-w-none bg-green-50 rounded-lg p-6 border border-green-200">
-          <ReactMarkdown 
-            remarkPlugins={[remarkMath, remarkGfm]}
-            rehypePlugins={[rehypeKatex]}
-          >
-            {chapter.questions}
-          </ReactMarkdown>
-        </div>
+        <InteractiveQuestions questionsMarkdown={chapter.questions} />
       </div>
 
       {/* 底部导航 */}
