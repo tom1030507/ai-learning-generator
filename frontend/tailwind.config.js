@@ -20,9 +20,37 @@ export default {
           900: '#0c4a6e',
         },
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+            color: '#374151',
+            h1: {
+              color: '#1f2937',
+              fontWeight: '700',
+            },
+            h2: {
+              color: '#1f2937',
+              fontWeight: '600',
+            },
+            h3: {
+              color: '#374151',
+              fontWeight: '600',
+            },
+            strong: {
+              color: '#1f2937',
+            },
+            code: {
+              color: '#0284c7',
+            },
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }
 
 

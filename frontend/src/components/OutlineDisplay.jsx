@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 
 const OutlineDisplay = ({ outline, onConfirm, onEdit, isLoading }) => {
   const [editedOutline, setEditedOutline] = React.useState(outline);
@@ -41,9 +42,9 @@ const OutlineDisplay = ({ outline, onConfirm, onEdit, isLoading }) => {
             className="input-field min-h-[300px] font-mono text-sm"
           />
         ) : (
-          <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
-            {editedOutline}
-          </pre>
+          <div className="prose prose-sm max-w-none">
+            <ReactMarkdown>{editedOutline}</ReactMarkdown>
+          </div>
         )}
       </div>
 

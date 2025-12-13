@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 
 const ContentDisplay = ({ content, onConfirm, isLoading }) => {
   return (
@@ -11,10 +12,8 @@ const ContentDisplay = ({ content, onConfirm, isLoading }) => {
       </div>
 
       <div className="bg-gray-50 rounded-lg p-6 mb-4 max-h-[600px] overflow-y-auto">
-        <div className="prose max-w-none">
-          <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-            {content}
-          </div>
+        <div className="prose prose-slate max-w-none">
+          <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       </div>
 
