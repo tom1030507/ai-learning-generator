@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import GeneratorForm from './components/GeneratorForm';
 import OutlineDisplay from './components/OutlineDisplay';
-import ContentDisplay from './components/ContentDisplay';
-import QuestionsDisplay from './components/QuestionsDisplay';
+import ChapterDisplay from './components/ChapterDisplay';
+import ChapterNavigation from './components/ChapterNavigation';
 import History from './components/History';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProgressIndicator from './components/ProgressIndicator';
-import { generateOutline, generateContent, generateQuestions, getGenerationProgress } from './services/api';
+import { generateOutline, generateContent, getGenerationProgress } from './services/api';
 
 function App() {
-  const [currentView, setCurrentView] = useState('form'); // 'form', 'history', 'view'
-  const [currentStep, setCurrentStep] = useState(0); // 0: form, 1: outline, 2: content, 3: questions
+  const [currentView, setCurrentView] = useState('form'); // 'form', 'history'
+  const [currentStep, setCurrentStep] = useState(0); // 0: form, 1: outline, 2: chapters
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(null);
   const [generationId, setGenerationId] = useState(null);
   const [outline, setOutline] = useState('');
-  const [content, setContent] = useState('');
-  const [questions, setQuestions] = useState('');
+  const [chaptersData, setChaptersData] = useState(null);
+  const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [progress, setProgress] = useState(null);
 
-  // 輪詢進度
+  // 轮询进度
   useEffect(() => {
     let intervalId;
     if (loading && generationId && currentStep === 2) {
@@ -33,7 +33,7 @@ function App() {
         } catch (error) {
           console.error('取得進度失敗:', error);
         }
-      }, 1000); // 每秒查詢一次
+      }, 1000); // 每秒查询一次
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -61,31 +61,45 @@ function App() {
   const handleOutlineConfirm = async (editedOutline) => {
     setLoading(true);
     setProgress(null);
+    setCurrentStep(2);
 
     try {
       const response = await generateContent(generationId, editedOutline);
-      setContent(response.content);
-      setCurrentStep(2);
+      // 解析返回的JSON格式章节数据
+      const data = JSON.parse(response.content);
+      setChaptersData(data);
+      setCurrentChapterIndex(0);
     } catch (error) {
+      console.error('生成教材錯誤:', error);
       alert('生成教材失敗，請稍後再試');
+      setCurrentStep(1);
     } finally {
       setLoading(false);
       setProgress(null);
     }
   };
 
-  const handleContentConfirm = async (currentContent) => {
-    setLoading(true);
-
-    try {
-      const response = await generateQuestions(generationId, currentContent);
-      setQuestions(response.questions);
-      setCurrentStep(3);
-    } catch (error) {
-      alert('生成題目失敗，請稍後再試');
-    } finally {
-      setLoading(false);
+  const handleNextChapter = () => {
+    if (chaptersData && currentChapterIndex < chaptersData.chapters.length - 1) {
+      setCurrentChapterIndex(currentChapterIndex + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handlePrevChapter = () => {
+    if (currentChapterIndex > 0) {
+      setCurrentChapterIndex(currentChapterIndex - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleSelectChapter = (index) => {
+    setCurrentChapterIndex(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFinish = () => {
+    alert('🎉 恭喜完成所有章節的學習！');
   };
 
   const handleReset = () => {
@@ -93,8 +107,8 @@ function App() {
     setFormData(null);
     setGenerationId(null);
     setOutline('');
-    setContent('');
-    setQuestions('');
+    setChaptersData(null);
+    setCurrentChapterIndex(0);
     setCurrentView('form');
   };
 
@@ -110,14 +124,18 @@ function App() {
     });
     setGenerationId(item.id);
     setOutline(item.outline || '');
-    setContent(item.content || '');
-    setQuestions(item.questions || '');
     
-    // 判斷應該顯示到哪個步驟
-    if (item.questions) {
-      setCurrentStep(3);
-    } else if (item.content) {
-      setCurrentStep(2);
+    // 嘗試解析章節數據
+    if (item.content) {
+      try {
+        const data = JSON.parse(item.content);
+        setChaptersData(data);
+        setCurrentChapterIndex(0);
+        setCurrentStep(2);
+      } catch (e) {
+        // 如果不是JSON格式，顯示大綱
+        setCurrentStep(1);
+      }
     } else if (item.outline) {
       setCurrentStep(1);
     } else {
@@ -132,8 +150,7 @@ function App() {
 
     const steps = [
       { number: 1, label: '大綱' },
-      { number: 2, label: '教材' },
-      { number: 3, label: '題目' }
+      { number: 2, label: '教材' }
     ];
 
     return (
@@ -242,60 +259,61 @@ function App() {
                     </div>
                   )}
 
-                  {loading && currentStep === 1 ? (
-                    <LoadingSpinner message="正在生成教學大綱..." />
-                  ) : outline && (
-                    <div className="max-w-4xl mx-auto">
-                      <OutlineDisplay
-                        outline={outline}
-                        onConfirm={handleOutlineConfirm}
-                        onEdit={setOutline}
-                        isLoading={loading && currentStep === 2}
-                      />
-                    </div>
+                  {currentStep === 1 && (
+                    loading ? (
+                      <LoadingSpinner message="正在生成教學大綱..." />
+                    ) : outline && (
+                      <div className="max-w-4xl mx-auto">
+                        <OutlineDisplay
+                          outline={outline}
+                          onConfirm={handleOutlineConfirm}
+                          onEdit={setOutline}
+                          isLoading={loading}
+                        />
+                      </div>
+                    )
                   )}
                 </>
               )}
 
-              {/* Step 2: Content */}
+              {/* Step 2: Chapters */}
               {currentStep >= 2 && (
                 <>
-                  {loading && currentStep === 2 ? (
+                  {loading ? (
                     progress && progress.total > 0 ? (
                       <div className="max-w-4xl mx-auto">
                         <ProgressIndicator
                           current={progress.current}
                           total={progress.total}
-                          message="正在逐章生成教材內容"
+                          message="正在逐章生成教材內容和練習題"
                         />
                       </div>
                     ) : (
-                      <LoadingSpinner message="正在生成教材內容..." />
+                      <LoadingSpinner message="正在準備生成教材..." />
                     )
-                  ) : content && (
-                    <div className="max-w-4xl mx-auto">
-                      <ContentDisplay
-                        content={content}
-                        onConfirm={handleContentConfirm}
-                        isLoading={loading && currentStep === 3}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Step 3: Questions */}
-              {currentStep >= 3 && (
-                <>
-                  {loading && currentStep === 3 ? (
-                    <LoadingSpinner message="正在生成練習題目..." />
-                  ) : questions && (
-                    <div className="max-w-4xl mx-auto">
-                      <QuestionsDisplay questions={questions} />
-                      <div className="mt-6 text-center">
-                        <button onClick={handleReset} className="btn-primary">
-                          生成新教材
-                        </button>
+                  ) : chaptersData && (
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                      {/* 左侧导航 */}
+                      <div className="lg:col-span-1">
+                        <div className="lg:sticky lg:top-4">
+                          <ChapterNavigation
+                            chapters={chaptersData.chapters}
+                            currentChapter={currentChapterIndex}
+                            onSelectChapter={handleSelectChapter}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* 右侧内容 */}
+                      <div className="lg:col-span-3">
+                        <ChapterDisplay
+                          chapter={chaptersData.chapters[currentChapterIndex]}
+                          chapterIndex={currentChapterIndex}
+                          totalChapters={chaptersData.chapters.length}
+                          onNext={handleNextChapter}
+                          onPrev={handlePrevChapter}
+                          onFinish={handleFinish}
+                        />
                       </div>
                     </div>
                   )}

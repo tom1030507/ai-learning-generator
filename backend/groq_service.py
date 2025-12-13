@@ -78,13 +78,15 @@ class GroqService:
 
     def generate_chapter_content(self, subject: str, grade: str, unit: str, 
                                 chapter_number: int, chapter_title: str, 
-                                topics: list, full_outline: str) -> str:
+                                topics: list, full_outline: str) -> dict:
         """
-        為單個章節生成詳細內容
+        為單個章節生成詳細內容和練習題
+        返回包含內容和練習題的字典
         """
         topics_text = "\n".join([f"- {topic}" for topic in topics])
         
-        prompt = f"""
+        # 生成章節內容
+        content_prompt = f"""
 你是一位經驗豐富的{subject}老師。請為{grade}學生編寫以下章節的詳細教材內容。
 
 單元：{unit}
@@ -108,38 +110,93 @@ class GroqService:
 請生成完整的章節內容：
 """
         
-        chat_completion = self.client.chat.completions.create(
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
+        content_completion = self.client.chat.completions.create(
+            messages=[{"role": "user", "content": content_prompt}],
             model=self.model,
             temperature=0.7,
             max_tokens=2048,
         )
         
-        return chat_completion.choices[0].message.content
+        chapter_content = content_completion.choices[0].message.content
+        
+        # 生成該章節的練習題
+        questions_prompt = f"""
+你是一位專業的題目設計師。請根據以下章節內容，為{grade}學生設計練習題。
+
+科目：{subject}
+單元：{unit}
+章節：第{chapter_number}章 - {chapter_title}
+
+章節內容：
+{chapter_content}
+
+請以清晰的 Markdown 格式輸出 3-5 題練習題，格式範例：
+
+## 第1題（選擇題）
+題目內容
+
+A) 選項A
+B) 選項B  
+C) 選項C
+D) 選項D
+
+**正確答案：** B
+
+**詳細解析：**
+解題步驟和說明...
+
+---
+
+## 第2題（計算題）
+題目內容
+
+**正確答案：** 答案內容
+
+**詳細解析：**
+解題步驟和說明...
+
+---
+
+要求：
+1. 設計 3-5 題針對本章節的練習題
+2. 題目難度應符合{grade}程度
+3. 涵蓋本章節的主要概念
+4. 對於數學題目，確保數值準確且合理
+5. 提供詳細的解題步驟和說明
+6. 題型多樣化（選擇、填充、計算、問答等）
+7. 使用清晰的 Markdown 格式，每題之間用分隔線（---）區分
+"""
+        
+        questions_completion = self.client.chat.completions.create(
+            messages=[{"role": "user", "content": questions_prompt}],
+            model=self.model,
+            temperature=0.7,
+            max_tokens=2048,
+        )
+        
+        chapter_questions = questions_completion.choices[0].message.content
+        
+        return {
+            "content": chapter_content,
+            "questions": chapter_questions
+        }
 
     def generate_content(self, subject: str, grade: str, unit: str, outline: str, progress_callback=None) -> str:
         """
         階段二：根據大綱逐章節生成詳細教材
-        解析 JSON 大綱，針對每個章節調用 AI 生成內容
+        返回包含所有章節內容和練習題的JSON字符串
         """
         try:
             # 解析 JSON 大綱
             import json
             outline_data = json.loads(outline)
             
-            # 生成完整教材
-            full_content = f"# {outline_data['title']}\n\n"
-            
-            # 添加學習目標
-            full_content += "## 學習目標\n\n"
-            for i, obj in enumerate(outline_data['objectives'], 1):
-                full_content += f"{i}. {obj}\n"
-            full_content += "\n---\n\n"
+            # 準備結果結構
+            result = {
+                "title": outline_data['title'],
+                "objectives": outline_data['objectives'],
+                "chapters": []
+            }
             
             # 逐章節生成內容
             chapters = outline_data['chapters']
@@ -149,6 +206,7 @@ class GroqService:
                 chapter_num = chapter['chapter_number']
                 chapter_title = chapter['title']
                 topics = chapter['topics']
+                description = chapter.get('description', '')
                 
                 print(f"正在生成第 {chapter_num} 章：{chapter_title}... ({index}/{total_chapters})")
                 
@@ -156,19 +214,25 @@ class GroqService:
                 if progress_callback:
                     progress_callback(index, total_chapters)
                 
-                # 調用 AI 生成本章節內容
-                chapter_content = self.generate_chapter_content(
+                # 調用 AI 生成本章節內容和練習題
+                chapter_data = self.generate_chapter_content(
                     subject, grade, unit,
                     chapter_num, chapter_title, topics,
                     outline
                 )
                 
-                # 組合章節內容
-                full_content += f"## 第{chapter_num}章：{chapter_title}\n\n"
-                full_content += chapter_content + "\n\n"
-                full_content += "---\n\n"
+                # 添加到結果中
+                result["chapters"].append({
+                    "chapter_number": chapter_num,
+                    "title": chapter_title,
+                    "topics": topics,
+                    "description": description,
+                    "content": chapter_data["content"],
+                    "questions": chapter_data["questions"]
+                })
             
-            return full_content
+            # 返回JSON字符串
+            return json.dumps(result, ensure_ascii=False, indent=2)
             
         except json.JSONDecodeError as e:
             # 如果 JSON 解析失敗，回退到原來的方法
