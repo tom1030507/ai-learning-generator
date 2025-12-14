@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getHistory, getHistoryItem } from '../services/api';
+import { getHistory, getHistoryItem, deleteHistoryItem } from '../services/api';
 
 const History = ({ onSelectItem }) => {
   const [history, setHistory] = useState([]);
@@ -31,6 +31,21 @@ const History = ({ onSelectItem }) => {
       onSelectItem(item);
     } catch (err) {
       console.error('載入記錄詳情失敗:', err);
+    }
+  };
+
+  const handleDeleteItem = async (e, id) => {
+    e.stopPropagation(); // 避免觸發選取
+    if (!window.confirm('確定要刪除此歷史記錄嗎？')) return;
+    try {
+      setLoading(true);
+      await deleteHistoryItem(id);
+      await loadHistory();
+    } catch (err) {
+      setError('刪除歷史記錄失敗');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,6 +134,15 @@ const History = ({ onSelectItem }) => {
                   {item.questions && (
                     <span className="w-2 h-2 bg-purple-500 rounded-full" title="已有題目"></span>
                   )}
+                  <button
+                    onClick={(e) => handleDeleteItem(e, item.id)}
+                    className="ml-3 text-red-500 hover:text-red-700 transition-colors"
+                    title="刪除此記錄"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>

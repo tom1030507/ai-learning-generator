@@ -79,6 +79,16 @@ export const getHistoryItem = async (id) => {
   }
 };
 
+export const deleteHistoryItem = async (id) => {
+  try {
+    const response = await api.delete(`/api/history/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('刪除歷史記錄失敗:', error);
+    throw error;
+  }
+};
+
 export default api;
 
 

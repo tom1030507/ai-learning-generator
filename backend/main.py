@@ -209,6 +209,19 @@ def get_history_item(generation_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="找不到該記錄")
     return generation
 
+@app.delete("/api/history/{generation_id}")
+def delete_history_item(generation_id: int, db: Session = Depends(get_db)):
+    """
+    刪除特定歷史記錄
+    """
+    generation = db.query(Generation).filter(Generation.id == generation_id).first()
+    if not generation:
+        raise HTTPException(status_code=404, detail="找不到該記錄")
+    
+    db.delete(generation)
+    db.commit()
+    return {"status": "success", "message": "已刪除歷史記錄", "id": generation_id}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -286,16 +286,16 @@ $$v = \\frac{{d}}{{t}} = \\frac{{800\\text{{ m}}}}{{10\\text{{ min}}}} = 80\\tex
                 
                 print(f"正在生成第 {chapter_num} 章：{chapter_title}... ({index}/{total_chapters})")
                 
-                # 更新進度
-                if progress_callback:
-                    progress_callback(index, total_chapters)
-                
                 # 調用 AI 生成本章節內容和練習題
                 chapter_data = self.generate_chapter_content(
                     subject, grade, unit,
                     chapter_num, chapter_title, topics,
                     outline
                 )
+                
+                # 生成完成後再更新進度（表示已完成的章數）
+                if progress_callback:
+                    progress_callback(index, total_chapters)
                 
                 # 添加到結果中
                 result["chapters"].append({

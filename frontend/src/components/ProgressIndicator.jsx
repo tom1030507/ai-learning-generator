@@ -1,7 +1,9 @@
 import React from 'react';
 
 const ProgressIndicator = ({ current, total, message }) => {
-  const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+  // current 代表已完成的章數
+  const completed = Math.min(current || 0, total || 0);
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
     <div className="card">
@@ -20,7 +22,7 @@ const ProgressIndicator = ({ current, total, message }) => {
             ></div>
           </div>
           <div className="flex justify-between mt-2 text-sm text-gray-600">
-            <span>已完成 {current} / {total} 章</span>
+            <span>已完成 {completed} / {total} 章</span>
             <span>{percentage}%</span>
           </div>
         </div>
@@ -42,9 +44,8 @@ const ProgressIndicator = ({ current, total, message }) => {
         <div className="space-y-2">
           {Array.from({ length: total }, (_, index) => {
             const chapterNum = index + 1;
-            const isCompleted = chapterNum < current;
-            const isCurrent = chapterNum === current;
-            const isPending = chapterNum > current;
+            const isCompleted = chapterNum <= completed;
+            const isCurrent = chapterNum === completed + 1 && completed < total;
 
             return (
               <div
