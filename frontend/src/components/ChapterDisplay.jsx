@@ -6,7 +6,34 @@ import rehypeKatex from 'rehype-katex';
 import InteractiveQuestions from './InteractiveQuestions';
 import 'katex/dist/katex.min.css';
 
-const ChapterDisplay = ({ chapter, chapterIndex, totalChapters, onNext, onPrev, onFinish }) => {
+const ChapterDisplay = ({
+  chapter,
+  chapterIndex,
+  totalChapters,
+  onNext,
+  onPrev,
+  onFinish,
+  generationId,
+  outline,
+  onChapterUpdate
+}) => {
+  const [regenLoading, setRegenLoading] = React.useState(false);
+
+  const handleRegenerate = async () => {
+    if (!generationId || !outline) return;
+    setRegenLoading(true);
+    try {
+      const res = await import('../services/api').then(m => m.regenerateChapter(generationId, chapter.chapter_number, outline));
+      if (res?.chapter && onChapterUpdate) {
+        onChapterUpdate(res.chapter);
+      }
+    } catch (e) {
+      console.error('重新生成章節失敗:', e);
+      alert('重新生成本章失敗，請稍後再試');
+    } finally {
+      setRegenLoading(false);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* 章节导航头部 */}
@@ -22,6 +49,16 @@ const ChapterDisplay = ({ chapter, chapterIndex, totalChapters, onNext, onPrev, 
             )}
           </div>
           <div className="flex items-center gap-2">
+          <button
+            onClick={handleRegenerate}
+            disabled={regenLoading}
+            className="px-4 py-2 rounded-lg flex items-center gap-2 bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-300 disabled:opacity-60"
+          >
+            {regenLoading ? '重新生成中...' : '重新生成本章'}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
             <button
               onClick={onPrev}
               disabled={chapterIndex === 0}

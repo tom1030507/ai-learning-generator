@@ -5,13 +5,22 @@ import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
+// 洗牌（Fisher-Yates）
+const shuffleArray = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
 const InteractiveQuestions = ({ questionsMarkdown }) => {
   const [questions, setQuestions] = useState([]);
   const [userAnswers, setUserAnswers] = useState({});
   const [showResults, setShowResults] = useState({});
 
   useEffect(() => {
-    // 解析 Markdown 格式的練習題
     parseQuestions(questionsMarkdown);
   }, [questionsMarkdown]);
 
@@ -20,31 +29,35 @@ const InteractiveQuestions = ({ questionsMarkdown }) => {
     const lines = markdown.split('\n');
     let currentQuestion = null;
     let collectingExplanation = false;
+    let collectingCommonErrors = false;
+    let collectingTips = false;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
 
-      // 檢測題目開始（## 第X題）
+      // 題目開始
       const questionMatch = line.match(/^##\s*第\s*(\d+)\s*題[（(](.+?)[）)]/);
       if (questionMatch) {
-        if (currentQuestion) {
-          parsed.push(currentQuestion);
-        }
+        if (currentQuestion) parsed.push(finalizeQuestion(currentQuestion));
         currentQuestion = {
           number: questionMatch[1],
           type: questionMatch[2],
           question: '',
           options: [],
           answer: '',
-          explanation: ''
+          explanation: '',
+          commonErrors: '',
+          tips: ''
         };
         collectingExplanation = false;
+        collectingCommonErrors = false;
+        collectingTips = false;
         continue;
       }
 
       if (!currentQuestion) continue;
 
-      // 檢測選項（A) B) C) D) 或 A. B. C. D.）
+      // 選項
       const optionMatch = line.match(/^([A-D])[\).)]\s*(.+)/);
       if (optionMatch) {
         currentQuestion.options.push({
@@ -54,7 +67,7 @@ const InteractiveQuestions = ({ questionsMarkdown }) => {
         continue;
       }
 
-      // 檢測答案
+      // 答案
       if (line.includes('**正確答案') || line.includes('**答案')) {
         const answerMatch = line.match(/[：:]\*\*\s*(.+?)(?:\s|$)/);
         if (answerMatch) {
@@ -68,40 +81,75 @@ const InteractiveQuestions = ({ questionsMarkdown }) => {
         continue;
       }
 
-      // 檢測解析開始
+      // 區塊標記
       if (line.includes('**詳細解析') || line.includes('**解析')) {
         collectingExplanation = true;
+        collectingCommonErrors = false;
+        collectingTips = false;
+        continue;
+      }
+      if (line.includes('**常見錯誤') || line.includes('**常見易錯**')) {
+        collectingExplanation = false;
+        collectingCommonErrors = true;
+        collectingTips = false;
+        continue;
+      }
+      if (line.includes('**技巧提示') || line.includes('**解題技巧**')) {
+        collectingExplanation = false;
+        collectingCommonErrors = false;
+        collectingTips = true;
         continue;
       }
 
-      // 分隔線表示題目結束
+      // 分隔線：題目結束
       if (line === '---' || line === '──' || line.startsWith('---')) {
-        if (currentQuestion) {
-          parsed.push(currentQuestion);
-          currentQuestion = null;
-        }
+        if (currentQuestion) parsed.push(finalizeQuestion(currentQuestion));
+        currentQuestion = null;
         collectingExplanation = false;
+        collectingCommonErrors = false;
+        collectingTips = false;
         continue;
       }
 
       // 收集內容
       if (currentQuestion) {
         if (collectingExplanation) {
-          if (line) {
-            currentQuestion.explanation += line + '\n';
-          }
-        } else if (!currentQuestion.options.length && line && !line.startsWith('#')) {
+          if (line) currentQuestion.explanation += line + '\n';
+        } else if (collectingCommonErrors) {
+          if (line) currentQuestion.commonErrors += line + '\n';
+        } else if (collectingTips) {
+          if (line) currentQuestion.tips += line + '\n';
+        } else if (line && !line.startsWith('#')) {
           currentQuestion.question += line + ' ';
         }
       }
     }
 
-    // 加入最後一題
-    if (currentQuestion) {
-      parsed.push(currentQuestion);
-    }
-
+    if (currentQuestion) parsed.push(finalizeQuestion(currentQuestion));
     setQuestions(parsed);
+  };
+
+  // 對單題做洗牌並標註正確答案映射
+  const finalizeQuestion = (q) => {
+    // 洗牌選項，重新賦予 A-D 顯示標籤
+    const shuffled = shuffleArray(q.options).map((opt, idx) => ({
+      ...opt,
+      displayLabel: String.fromCharCode(65 + idx), // A-D
+      originalLabel: opt.label
+    }));
+    // 找到正確顯示標籤
+    const correctDisplay = shuffled.find(
+      (opt) => opt.originalLabel.toUpperCase() === q.answer.charAt(0).toUpperCase()
+    )?.displayLabel || q.answer.charAt(0).toUpperCase();
+
+    return {
+      ...q,
+      options: shuffled,
+      correctLabel: correctDisplay,
+      explanation: q.explanation.trim(),
+      commonErrors: q.commonErrors.trim(),
+      tips: q.tips.trim()
+    };
   };
 
   const handleSelectAnswer = (questionIndex, selectedOption) => {
@@ -121,14 +169,8 @@ const InteractiveQuestions = ({ questionsMarkdown }) => {
   const isCorrect = (questionIndex) => {
     const question = questions[questionIndex];
     const userAnswer = userAnswers[questionIndex];
-    
     if (!userAnswer) return false;
-    
-    // 比較選項字母（支援 "A" 或 "A)" 格式）
-    const normalizedUserAnswer = userAnswer.charAt(0).toUpperCase();
-    const normalizedCorrectAnswer = question.answer.charAt(0).toUpperCase();
-    
-    return normalizedUserAnswer === normalizedCorrectAnswer;
+    return userAnswer.charAt(0).toUpperCase() === question.correctLabel.toUpperCase();
   };
 
   return (
@@ -163,14 +205,14 @@ const InteractiveQuestions = ({ questionsMarkdown }) => {
             {/* 選項 */}
             <div className="ml-11 space-y-3 mb-4">
               {question.options.map((option, optIndex) => {
-                const isSelected = selectedAnswer === option.label;
-                const isCorrectAnswer = hasAnswered && (option.label === question.answer || option.label === question.answer.charAt(0));
+                const isSelected = selectedAnswer === option.displayLabel;
+                const isCorrectAnswer = hasAnswered && (option.displayLabel === question.correctLabel);
                 const isWrongSelected = hasAnswered && isSelected && !correct;
 
                 return (
                   <button
                     key={optIndex}
-                    onClick={() => !hasAnswered && handleSelectAnswer(index, option.label)}
+                    onClick={() => !hasAnswered && handleSelectAnswer(index, option.displayLabel)}
                     disabled={hasAnswered}
                     className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                       hasAnswered
@@ -277,7 +319,7 @@ const InteractiveQuestions = ({ questionsMarkdown }) => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-3">
                   <p className="text-blue-900 font-semibold mb-1">✓ 正確答案：</p>
                   <p className="text-blue-800 font-medium text-lg">
-                    {question.answer}
+                    {question.correctLabel}
                   </p>
                 </div>
 
@@ -291,6 +333,36 @@ const InteractiveQuestions = ({ questionsMarkdown }) => {
                         rehypePlugins={[rehypeKatex]}
                       >
                         {question.explanation.trim()}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+
+                {/* 常見錯誤 */}
+                {question.commonErrors && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-3">
+                    <p className="text-red-900 font-semibold mb-2">⚠️ 常見錯誤：</p>
+                    <div className="text-red-800 prose prose-sm max-w-none">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {question.commonErrors.trim()}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+
+                {/* 技巧提示 */}
+                {question.tips && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
+                    <p className="text-green-900 font-semibold mb-2">💡 技巧提示：</p>
+                    <div className="text-green-800 prose prose-sm max-w-none">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {question.tips.trim()}
                       </ReactMarkdown>
                     </div>
                   </div>

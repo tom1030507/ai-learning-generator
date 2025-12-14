@@ -89,6 +89,20 @@ export const deleteHistoryItem = async (id) => {
   }
 };
 
+export const regenerateChapter = async (generationId, chapterNumber, outline) => {
+  try {
+    const response = await api.post('/api/regenerate-chapter', {
+      generation_id: generationId,
+      chapter_number: chapterNumber,
+      outline,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('重新生成章節失敗:', error);
+    throw error;
+  }
+};
+
 export default api;
 
 

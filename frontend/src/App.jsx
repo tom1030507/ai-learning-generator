@@ -325,6 +325,14 @@ function App() {
                           onNext={handleNextChapter}
                           onPrev={handlePrevChapter}
                           onFinish={handleFinish}
+                          generationId={generationId}
+                          outline={outline}
+                          onChapterUpdate={(updatedChapter) => {
+                            const newChapters = chaptersData.chapters.map((ch) =>
+                              ch.chapter_number === updatedChapter.chapter_number ? updatedChapter : ch
+                            );
+                            setChaptersData({ ...chaptersData, chapters: newChapters });
+                          }}
                         />
                       </div>
                     </div>

@@ -13,7 +13,9 @@ from schemas import (
     OutlineResponse,
     ContentResponse,
     QuestionsResponse,
-    GenerationHistoryItem
+    GenerationHistoryItem,
+    RegenerateChapterRequest,
+    RegenerateChapterResponse
 )
 from groq_service import GroqService
 from config import settings
@@ -221,6 +223,91 @@ def delete_history_item(generation_id: int, db: Session = Depends(get_db)):
     db.delete(generation)
     db.commit()
     return {"status": "success", "message": "已刪除歷史記錄", "id": generation_id}
+
+@app.post("/api/regenerate-chapter", response_model=RegenerateChapterResponse)
+def regenerate_chapter(
+    request: RegenerateChapterRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    重新生成單一章節的內容與題目
+    """
+    try:
+        generation = db.query(Generation).filter(Generation.id == request.generation_id).first()
+        if not generation:
+            raise HTTPException(status_code=404, detail="找不到該記錄")
+
+        # 取用 outline（優先使用請求中的 outline，否則用資料庫中的）
+        outline_text = request.outline or generation.outline
+        outline_data = json.loads(outline_text)
+
+        # 找到對應章節定義
+        target_outline_chapter = next(
+            (c for c in outline_data.get("chapters", []) if c.get("chapter_number") == request.chapter_number),
+            None
+        )
+        if not target_outline_chapter:
+            raise HTTPException(status_code=404, detail="找不到該章節定義")
+
+        # 生成單章內容與題目
+        chapter_result = groq_service.generate_chapter_content(
+            generation.subject,
+            generation.grade,
+            generation.unit,
+            target_outline_chapter.get("chapter_number"),
+            target_outline_chapter.get("title"),
+            target_outline_chapter.get("topics", []),
+            outline_text
+        )
+
+        updated_chapter = {
+            "chapter_number": target_outline_chapter.get("chapter_number"),
+            "title": target_outline_chapter.get("title"),
+            "topics": target_outline_chapter.get("topics", []),
+            "description": target_outline_chapter.get("description", ""),
+            "content": chapter_result["content"],
+            "questions": chapter_result["questions"]
+        }
+
+        # 更新存量的 content JSON
+        try:
+            content_json = json.loads(generation.content) if generation.content else None
+        except Exception:
+            content_json = None
+
+        if not content_json:
+            # 若尚未生成過，建立骨架
+            content_json = {
+                "title": outline_data.get("title", ""),
+                "objectives": outline_data.get("objectives", []),
+                "chapters": []
+            }
+
+        # 替換或新增章節
+        chapters = content_json.get("chapters", [])
+        replaced = False
+        for idx, ch in enumerate(chapters):
+            if ch.get("chapter_number") == request.chapter_number:
+                chapters[idx] = updated_chapter
+                replaced = True
+                break
+        if not replaced:
+            chapters.append(updated_chapter)
+        content_json["chapters"] = chapters
+
+        # 儲存
+        generation.content = json.dumps(content_json, ensure_ascii=False, indent=2)
+        db.commit()
+        db.refresh(generation)
+
+        return RegenerateChapterResponse(
+            generation_id=generation.id,
+            chapter=updated_chapter
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"重新生成章節失敗: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

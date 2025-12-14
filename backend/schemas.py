@@ -15,6 +15,11 @@ class GenerateQuestionsRequest(BaseModel):
     generation_id: int
     content: str
 
+class RegenerateChapterRequest(BaseModel):
+    generation_id: int
+    chapter_number: int
+    outline: str
+
 class OutlineResponse(BaseModel):
     generation_id: int
     outline: str
@@ -26,6 +31,10 @@ class ContentResponse(BaseModel):
 class QuestionsResponse(BaseModel):
     generation_id: int
     questions: str
+
+class RegenerateChapterResponse(BaseModel):
+    generation_id: int
+    chapter: dict
 
 class GenerationHistoryItem(BaseModel):
     id: int
