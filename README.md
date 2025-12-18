@@ -41,7 +41,7 @@
 
 ```bash
 git clone <repository-url>
-cd nccu_genai
+cd ai-learning-generator
 ```
 
 ### 2. 後端設定
@@ -232,22 +232,6 @@ nccu_genai/
 **解決方法**：
 - 刪除 `backend/learning_generator.db` 後重新啟動後端
 - 檢查檔案權限
-
-## 📝 授權
-
-本專案為教育用途開發，僅供學習參考。
-
-## 👥 貢獻者
-
-開發團隊：NCCU GenAI Course Project
-
-## 📧 聯絡方式
-
-如有問題或建議，歡迎聯繫開發團隊。
-
----
-
-**Powered by Google Gemini AI** 🤖
 
 
 
