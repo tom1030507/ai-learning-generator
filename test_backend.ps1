@@ -35,3 +35,5 @@ try {
     Write-Host "  3. 防火牆是否阻止了連接`n" -ForegroundColor White
 }
 
+
+

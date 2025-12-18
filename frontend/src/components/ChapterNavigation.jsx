@@ -77,3 +77,5 @@ const ChapterNavigation = ({ chapters, currentChapter, onSelectChapter }) => {
 
 export default ChapterNavigation;
 
+
+
