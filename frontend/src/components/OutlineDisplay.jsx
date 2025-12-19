@@ -29,7 +29,7 @@ const OutlineDisplay = ({ outline, onConfirm, onEdit, isLoading }) => {
   };
 
   const handleSave = () => {
-    // 将编辑的数据转回JSON字符串
+    // 將編輯的資料轉回JSON字串
     const jsonString = JSON.stringify(editData, null, 2);
     setEditedOutline(jsonString);
     onEdit(jsonString);
@@ -38,7 +38,7 @@ const OutlineDisplay = ({ outline, onConfirm, onEdit, isLoading }) => {
   };
 
   const handleCancel = () => {
-    // 重置为原始数据
+    // 重設為原始資料
     if (parsedOutline) {
       setEditData(JSON.parse(JSON.stringify(parsedOutline)));
     }
