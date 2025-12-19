@@ -2,9 +2,9 @@
 
 ## Windows 使用者（最簡單的方式）
 
-### 1️⃣ 取得 Gemini API Key
+### 1️⃣ 取得 Groq API Key
 
-前往 https://makersuite.google.com/app/apikey 並登入，點擊「Create API Key」取得金鑰。
+前往 https://console.groq.com/keys 並登入（或註冊），點擊「Create API Key」取得金鑰。
 
 ### 2️⃣ 設定環境變數
 
@@ -19,7 +19,7 @@ copy env.template .env
 notepad .env
 ```
 
-將 `your_gemini_api_key_here` 替換為你的實際 API Key。
+將 `your_groq_api_key_here` 替換為你的實際 API Key。
 
 ### 3️⃣ 啟動後端
 
@@ -45,9 +45,9 @@ start_frontend.bat
 
 ## macOS/Linux 使用者
 
-### 1️⃣ 取得 Gemini API Key
+### 1️⃣ 取得 Groq API Key
 
-前往 https://makersuite.google.com/app/apikey 取得金鑰。
+前往 https://console.groq.com/keys 取得金鑰。
 
 ### 2️⃣ 啟動後端
 
@@ -99,8 +99,3 @@ npm run dev
 ---
 
 **提示**：第一次生成教材可能需要 10-30 秒，請耐心等待！
-
-
-
-
-

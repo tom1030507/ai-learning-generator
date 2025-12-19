@@ -15,7 +15,7 @@
 - [x] SQLite 資料庫設定
 - [x] SQLAlchemy 資料模型定義
 - [x] Pydantic 驗證模型
-- [x] Gemini API 服務整合
+- [x] Groq API 服務整合
 - [x] 環境變數配置系統
 - [x] CORS 跨域設定
 
@@ -103,7 +103,7 @@
 - Python 3.9+
 - FastAPI 0.104+
 - SQLAlchemy 2.0+
-- Google Gemini API
+- Groq API (openai/gpt-oss-120b)
 
 **前端**
 - React 18
@@ -118,7 +118,7 @@
 ### ✅ 功能 1：大綱生成
 
 - [x] 接收科目、年級、單元輸入
-- [x] 呼叫 Gemini API 生成結構化大綱
+- [x] 呼叫 Groq API 生成結構化大綱
 - [x] JSON 格式輸出
 - [x] 可編輯與修改
 - [x] 儲存至資料庫
@@ -179,7 +179,7 @@
 
 1. **安裝環境**（2 分鐘）
    - 確認 Python 和 Node.js 已安裝
-   - 取得 Gemini API Key
+   - 取得 Groq API Key
 
 2. **設定專案**（2 分鐘）
    - 執行後端啟動腳本
@@ -221,7 +221,7 @@
 
 ## 🐛 已知限制
 
-1. **API 配額限制**：Gemini 免費版有使用上限
+1. **API 配額限制**：Groq 免費版有使用上限
 2. **單一資料庫**：SQLite 適合小型應用，大規模需升級
 3. **無認證系統**：目前任何人都可使用（可新增）
 4. **無多語言**：目前僅支援繁體中文
@@ -303,8 +303,3 @@
 **專案委託**：NCCU GenAI Course  
 **完成日期**：2025-12-13  
 **版本**：v1.0.0
-
-
-
-
-

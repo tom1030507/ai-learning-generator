@@ -34,6 +34,3 @@ try {
     Write-Host "  2. 端口 8000 是否被佔用" -ForegroundColor White
     Write-Host "  3. 防火牆是否阻止了連接`n" -ForegroundColor White
 }
-
-
-

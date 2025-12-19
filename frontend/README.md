@@ -147,8 +147,3 @@ try {
 ### Console.log
 
 在開發過程中使用 console.log 追蹤資料流
-
-
-
-
-

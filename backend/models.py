@@ -13,8 +13,3 @@ class Generation(Base):
     content = Column(Text, nullable=True)
     questions = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
-
-
-

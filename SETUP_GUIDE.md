@@ -16,12 +16,12 @@
   - 下載：https://nodejs.org/
   - 建議下載 LTS（長期支援）版本
 
-### 2. 取得 Gemini API Key
+### 2. 取得 Groq API Key
 
-1. 前往 Google AI Studio：https://makersuite.google.com/app/apikey
-2. 登入您的 Google 帳號
+1. 前往 Groq Console：https://console.groq.com/keys
+2. 登入您的 Groq 帳號（或註冊新帳號）
 3. 點擊「Create API Key」
-4. 複製產生的 API Key（格式類似：`AIza...`）
+4. 複製產生的 API Key（格式類似：`gsk_...`）
 
 ## ⚙️ 安裝步驟
 
@@ -41,23 +41,23 @@ start_backend.bat
 
 **重要：首次啟動會失敗，請按照以下步驟設定 API Key**
 
-#### 2. 設定 Gemini API Key
+#### 2. 設定 Groq API Key
 
 ```bash
 # 進入後端目錄
 cd backend
 
 # 複製環境變數範例檔案
-copy .env.example .env
+copy env.template .env
 
 # 使用記事本編輯 .env 檔案
 notepad .env
 ```
 
-在 `.env` 檔案中，將 `your_gemini_api_key_here` 替換為您的實際 API Key：
+在 `.env` 檔案中，將 `your_groq_api_key_here` 替換為您的實際 API Key：
 
 ```
-GEMINI_API_KEY=AIzaSy...你的實際API金鑰
+GROQ_API_KEY=gsk_...你的實際API金鑰
 DATABASE_URL=sqlite:///./learning_generator.db
 ```
 
@@ -103,7 +103,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 
 # 設定環境變數（參考上面的步驟 2）
-copy .env.example .env
+copy env.template .env
 notepad .env
 
 # 啟動服務
@@ -175,14 +175,15 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 問題 4：Gemini API 錯誤
+### 問題 4：Groq API 錯誤
 
 **錯誤訊息**：API key not valid 或 quota exceeded
 
 **解決方法**：
-- 檢查 `backend/.env` 中的 API Key 是否正確
+- 檢查 `backend/.env` 中的 `GROQ_API_KEY` 是否正確
 - 確認沒有多餘的空格或引號
 - 檢查 API Key 的配額是否已用盡
+- 確認使用的是 Groq 平台的 API Key（格式為 `gsk_...`）
 
 ### 問題 5：前端無法連接後端
 
@@ -229,8 +230,3 @@ taskkill /PID <PID> /F
 4. 聯繫開發團隊
 
 祝您使用愉快！🎉
-
-
-
-
-

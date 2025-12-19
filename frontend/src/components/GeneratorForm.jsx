@@ -87,8 +87,3 @@ const GeneratorForm = ({ onSubmit, isLoading }) => {
 };
 
 export default GeneratorForm;
-
-
-
-
-

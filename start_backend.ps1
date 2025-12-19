@@ -83,6 +83,3 @@ Write-Host "按 Ctrl+C 停止服務" -ForegroundColor Gray
 Write-Host ""
 
 uvicorn main:app --reload
-
-
-

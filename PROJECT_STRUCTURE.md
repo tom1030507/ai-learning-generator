@@ -15,7 +15,7 @@ nccu_genai/                              # 專案根目錄
 │   │
 │   ├── 📄 README.md                     # 後端 API 說明文件
 │   ├── 📄 requirements.txt              # Python 依賴套件清單
-│   ├── 📄 .env.example                  # 環境變數範例檔案
+│   ├── 📄 env.template                  # 環境變數範例檔案
 │   ├── 📄 .env                          # 環境變數設定（需自行建立，不納入版控）
 │   ├── 📄 .gitignore                    # 後端 Git 忽略設定
 │   │
@@ -24,7 +24,7 @@ nccu_genai/                              # 專案根目錄
 │   ├── 🐍 database.py                   # 資料庫連接設定
 │   ├── 🐍 models.py                     # SQLAlchemy 資料庫模型
 │   ├── 🐍 schemas.py                    # Pydantic 資料驗證模型
-│   ├── 🐍 gemini_service.py             # Gemini API 整合服務
+│   ├── 🐍 groq_service.py               # Groq API 整合服務
 │   │
 │   ├── 📂 venv/                         # Python 虛擬環境（自動生成）
 │   └── 🗄️ learning_generator.db        # SQLite 資料庫檔案（執行後自動生成）
@@ -83,7 +83,7 @@ nccu_genai/                              # 專案根目錄
 | `database.py` | 資料庫連接 | SQLAlchemy 引擎設定、Session 管理 |
 | `models.py` | 資料模型 | Generation 表結構定義 |
 | `schemas.py` | 資料驗證 | Pydantic 模型、Request/Response 格式 |
-| `gemini_service.py` | AI 服務 | Gemini API 整合、提示工程 |
+| `groq_service.py` | AI 服務 | Groq API 整合、提示工程 |
 
 ### 前端核心檔案
 
@@ -115,7 +115,7 @@ api.js (generateOutline)
     ↓
 Backend: /api/generate-outline
     ↓
-gemini_service.py (生成大綱)
+groq_service.py (生成大綱)
     ↓
 database.py (儲存)
     ↓
@@ -125,7 +125,7 @@ api.js (generateContent)
     ↓
 Backend: /api/generate-content
     ↓
-gemini_service.py (生成教材)
+groq_service.py (生成教材)
     ↓
 ContentDisplay.jsx (顯示)
     ↓
@@ -133,7 +133,7 @@ api.js (generateQuestions)
     ↓
 Backend: /api/generate-questions
     ↓
-gemini_service.py (生成題目)
+groq_service.py (生成題目)
     ↓
 QuestionsDisplay.jsx (顯示)
 ```
@@ -155,7 +155,7 @@ QuestionsDisplay.jsx (顯示)
 
 只有一個檔案需要手動建立：
 
-- `backend/.env` - 從 `backend/.env.example` 複製，填入實際的 Gemini API Key
+- `backend/.env` - 從 `backend/env.template` 複製，填入實際的 Groq API Key
 
 ## 📊 檔案統計
 
@@ -215,8 +215,3 @@ QuestionsDisplay.jsx (顯示)
 
 **更新日期**：2025-12-13
 **版本**：1.0.0
-
-
-
-
-

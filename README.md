@@ -20,7 +20,7 @@
 ### 後端
 - **框架**：FastAPI (Python)
 - **資料庫**：SQLite
-- **AI 引擎**：Google Gemini API
+- **AI 引擎**：Groq API (openai/gpt-oss-120b)
 - **ORM**：SQLAlchemy
 
 ### 前端
@@ -33,7 +33,7 @@
 
 - Python 3.9 或以上
 - Node.js 18 或以上
-- Gemini API Key（[申請連結](https://makersuite.google.com/app/apikey)）
+- Groq API Key（[申請連結](https://console.groq.com/keys)）
 
 ## 🚀 安裝與啟動
 
@@ -62,12 +62,12 @@ venv\Scripts\activate
 pip install -r requirements.txt
 
 # 設定環境變數
-# 將 .env.example 複製為 .env
-copy .env.example .env  # Windows
-# cp .env.example .env  # macOS/Linux
+# 將 env.template 複製為 .env
+copy env.template .env  # Windows
+# cp env.template .env  # macOS/Linux
 
-# 編輯 .env 檔案，填入你的 Gemini API Key
-# GEMINI_API_KEY=your_actual_api_key_here
+# 編輯 .env 檔案，填入你的 Groq API Key
+# GROQ_API_KEY=your_actual_api_key_here
 ```
 
 ### 3. 啟動後端服務
@@ -161,7 +161,7 @@ nccu_genai/
 │   ├── models.py              # 資料庫模型
 │   ├── schemas.py             # Pydantic 驗證模型
 │   ├── database.py            # 資料庫設定
-│   ├── gemini_service.py      # Gemini API 整合
+│   ├── groq_service.py        # Groq API 整合
 │   ├── config.py              # 環境變數設定
 │   ├── requirements.txt       # Python 依賴
 │   └── .env                   # 環境變數（需自行建立）
@@ -207,14 +207,15 @@ nccu_genai/
 
 ## 🐛 常見問題
 
-### 1. Gemini API 錯誤
+### 1. Groq API 錯誤
 
 **問題**：顯示 API Key 無效或配額用盡
 
 **解決方法**：
-- 檢查 `backend/.env` 中的 `GEMINI_API_KEY` 是否正確
+- 檢查 `backend/.env` 中的 `GROQ_API_KEY` 是否正確
 - 確認 API Key 沒有超過免費配額限制
-- 到 [Google AI Studio](https://makersuite.google.com/app/apikey) 檢查 API 狀態
+- 到 [Groq Console](https://console.groq.com/keys) 檢查 API 狀態
+- 確認使用的模型為 `openai/gpt-oss-120b`
 
 ### 2. 前端無法連接後端
 
@@ -232,8 +233,3 @@ nccu_genai/
 **解決方法**：
 - 刪除 `backend/learning_generator.db` 後重新啟動後端
 - 檢查檔案權限
-
-
-
-
-

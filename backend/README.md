@@ -13,7 +13,7 @@ pip install -r requirements.txt
 建立 `.env` 檔案：
 
 ```env
-GEMINI_API_KEY=你的_Gemini_API_金鑰
+GROQ_API_KEY=你的_Groq_API_金鑰
 DATABASE_URL=sqlite:///./learning_generator.db
 ```
 
@@ -141,21 +141,25 @@ uvicorn main:app --reload
 | questions | Text | 題目（JSON） |
 | created_at | DateTime | 建立時間 |
 
-## Gemini API 整合
+## Groq API 整合
+
+### 使用模型
+
+本專案使用 Groq 平台的 `openai/gpt-oss-120b` 模型，這是一個高效能的開源大型語言模型。
 
 ### 提示工程設計
 
 本專案使用 Chain of Thought 方法，確保 AI 生成的內容具有邏輯連貫性：
 
 1. **大綱生成**：要求 AI 以 JSON 格式輸出結構化大綱
-2. **教材生成**：基於大綱，強調適齡化與生活化
+2. **教材生成**：基於大綱，強調適齡化與生活化，逐章節生成內容
 3. **題目生成**：分析教材內容，產出精確對應的練習題
 
 ### API 配額管理
 
-Gemini API 免費版有以下限制：
-- 每分鐘請求數：60 次
-- 每天請求數：1500 次
+Groq API 提供快速的推理速度。免費版有使用限制，請參考官方文件：
+- 官方網站：https://console.groq.com/
+- API 文件：https://console.groq.com/docs
 
 建議實作快取機制或排隊系統以避免超過限制。
 
@@ -173,8 +177,3 @@ Gemini API 免費版有以下限制：
   "detail": "錯誤訊息"
 }
 ```
-
-
-
-
-

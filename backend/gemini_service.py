@@ -107,8 +107,3 @@ class GeminiService:
         
         response = self.model.generate_content(prompt)
         return response.text
-
-
-
-
-
